@@ -250,7 +250,7 @@ public class ServerInfoServiceImpl implements IServerInfoService {
                 }
                 // 获取在线玩家
                 Map<String, Object> onlinePlayer = new HashMap<>();
-                List<String> playerList = new ArrayList<>();
+                List<String> playerList = new ArrayList<>(); // 初始化列表
 
                 try {
                     String list = MapCache.get(info.getId().toString()).sendCommand("list");
@@ -270,15 +270,19 @@ public class ServerInfoServiceImpl implements IServerInfoService {
                         }
 
                         if (isVelocity) {
-                            // 处理Velocity格式
                             for (String line : lines) {
-                                if (line.startsWith("§3[")) {
-                                    String[] parts = line.split(":");
+                                if (line.contains("§e共有") || line.contains("已连接至此代理服务器")) {
+                                    continue;
+                                }
+                                String cleanedLine = line.replaceAll("§[0-9a-fk-or]", "");
+                                if (cleanedLine.contains(":")) {
+                                    String[] parts = cleanedLine.split(":");
                                     if (parts.length > 1) {
-                                        String[] players = parts[1].trim().split(", ");
-                                        playerList = Arrays.stream(players)
-                                                .filter(StringUtils::isNotEmpty)
+                                        String[] players = parts[1].trim().split(",\\s*"); // 灵活分割
+                                        List<String> filteredPlayers = Arrays.stream(players)
+                                                .filter(p -> !p.isEmpty()) // 原生方法替代StringUtils
                                                 .collect(Collectors.toList());
+                                        playerList.addAll(filteredPlayers); // 合并玩家
                                     }
                                 }
                             }
