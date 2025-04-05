@@ -269,18 +269,20 @@ public class ServerInfoServiceImpl implements IServerInfoService {
                             }
                         }
 
-                        if (isVelocity) {
+                        if (isVelocity) { // 处理Velocity的glist all响应
+                            // 跳过总人数统计行
                             for (String line : lines) {
                                 if (line.contains("§e共有") || line.contains("已连接至此代理服务器")) {
                                     continue;
                                 }
+                                // 去除颜色代码
                                 String cleanedLine = line.replaceAll("§[0-9a-fk-or]", "");
                                 if (cleanedLine.contains(":")) {
                                     String[] parts = cleanedLine.split(":");
                                     if (parts.length > 1) {
                                         String[] players = parts[1].trim().split(",\\s*"); // 灵活分割
                                         List<String> filteredPlayers = Arrays.stream(players)
-                                                .filter(p -> !p.isEmpty()) // 原生方法替代StringUtils
+                                                .filter(p -> !p.isEmpty())
                                                 .collect(Collectors.toList());
                                         playerList.addAll(filteredPlayers); // 合并玩家
                                     }
