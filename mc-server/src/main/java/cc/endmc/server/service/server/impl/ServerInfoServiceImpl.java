@@ -255,17 +255,46 @@ public class ServerInfoServiceImpl implements IServerInfoService {
                 try {
                     String list = MapCache.get(info.getId().toString()).sendCommand("list");
                     if (list != null) {
-                        String[] split = new String[0];
-                        // 判断是否插件服装有ESS
-                        if (!list.startsWith("There are")) {
-                            list = MapCache.get(info.getId().toString()).sendCommand("minecraft:list");
+                        String response = MapCache.get(info.getId().toString()).sendCommand("glist all");
+                        if (response == null) continue;
+
+                        boolean isVelocity = false;
+                        String[] lines = response.split("\n");
+
+                        // 检测Velocity代理响应格式
+                        for (String line : lines) {
+                            if (line.contains("§e共有 §a")) {
+                                isVelocity = true;
+                                break;
+                            }
                         }
-                        split = list.split(":");
-                        if (split.length > 1) {
-                            String[] players = split[1].trim().split(", ");
-                            playerList = Arrays.stream(players)
-                                    .filter(StringUtils::isNotEmpty)
-                                    .collect(Collectors.toList());
+
+                        if (isVelocity) {
+                            // 处理Velocity格式
+                            for (String line : lines) {
+                                if (line.startsWith("§3[")) {
+                                    String[] parts = line.split(":");
+                                    if (parts.length > 1) {
+                                        String[] players = parts[1].trim().split(", ");
+                                        playerList = Arrays.stream(players)
+                                                .filter(StringUtils::isNotEmpty)
+                                                .collect(Collectors.toList());
+                                    }
+                                }
+                            }
+                        } else {
+                            // 处理ESS和其他服务端
+                            if (!response.startsWith("There are")) {
+                                response = MapCache.get(info.getId().toString()).sendCommand("minecraft:list");
+                            }
+
+                            String[] split = list.split(":");
+                            if (split.length > 1) {
+                                String[] players = split[1].trim().split(", ");
+                                playerList = Arrays.stream(players)
+                                        .filter(StringUtils::isNotEmpty)
+                                        .collect(Collectors.toList());
+                            }
                         }
                         onlinePlayer.put("在线人数", playerList.size());
                         onlinePlayer.put("在线玩家", playerList.toString());

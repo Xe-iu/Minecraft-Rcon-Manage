@@ -130,16 +130,21 @@ public class OnlineTask {
             while (retryCount < maxRetries) {
                 try {
                     // 先发送一个简单的命令测试连接
-                    String testResponse = rconClient.sendCommand("seed");
+                    String testResponse = rconClient.sendCommand("whitelist");
                     if (testResponse == null) {
                         throw new Exception("Connection test failed");
                     }
 
                     // 获取在线玩家列表
                     String list = rconClient.sendCommand("list");
-                    if (list == null || !list.startsWith("There are")) {
+                    if (list == null || (!list.startsWith("There are"))) {
                         list = rconClient.sendCommand("minecraft:list");
                     }
+                    // 新增Velocity代理端支持
+                    if (list == null || (!list.startsWith("There are") && !list.startsWith("Online ("))) {
+                        list = rconClient.sendCommand("glist all");
+                    }
+
                     if (StringUtils.isNotEmpty(list)) {
                         if (list.contains("There are")) {
                             String[] parts = list.split(":");
@@ -160,6 +165,29 @@ public class OnlineTask {
                                     String[] players = playerList.split(", ");
                                     for (String player : players) {
                                         onlinePlayer.add(player.toLowerCase().trim());
+                                    }
+                                }
+                            }
+                        } else {
+                            // 处理Velocity的glist all响应
+                            String[] lines = list.split("\n");
+                            for (String line : lines) {
+                                // 跳过总人数统计行
+                                if (line.contains("§e共有") || line.contains("已连接至此代理服务器")) {
+                                    continue;
+                                }
+                                // 去除颜色代码
+                                String cleanedLine = line.replaceAll("§[0-9a-fk-or]", "");
+                                if (cleanedLine.contains(":")) {
+                                    String[] parts = cleanedLine.split(":");
+                                    if (parts.length > 1) {
+                                        String playersStr = parts[1].trim();
+                                        if (!playersStr.isEmpty()) {
+                                            String[] players = playersStr.split(", ");
+                                            for (String player : players) {
+                                                onlinePlayer.add(player.toLowerCase().trim());
+                                            }
+                                        }
                                     }
                                 }
                             }
